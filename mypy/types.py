@@ -1,5 +1,7 @@
 """Classes for representing mypy types."""
 
+import importlib
+
 import sys
 import copy
 from abc import abstractmethod
@@ -863,7 +865,10 @@ class CallableType(FunctionLike):
 
             # def right(a: int = ...) -> None: ...
             # def left(__a: int = ..., *, a: int = ...) -> None: ...
-            from mypy.subtypes import is_equivalent
+
+            # from mypy.subtypes import is_equivalent
+            is_equivalent = cast(Any, importlib.import_module('mypy.subtypes')).is_equivalent
+
             if (not (by_name.required or by_pos.required)
                     and by_pos.name is None
                     and by_name.pos is None
@@ -1296,7 +1301,8 @@ class UnionType(Type):
                     all_items.append(typ)
             items = all_items
 
-        from mypy.subtypes import is_proper_subtype
+        # from mypy.subtypes import is_proper_subtype
+        is_proper_subtype = cast(Any, importlib.import_module('mypy.subtypes')).is_proper_subtype
 
         removed = set()  # type: Set[int]
         for i, ti in enumerate(items):
@@ -1523,10 +1529,14 @@ class ForwardRef(Type):
 # to make it easier to gradually get modules working with mypyc.
 # Import them here, after the types are defined.
 # This is intended as a re-export also.
-if not MYPY:
-    from mypy.type_visitor import (  # noqa
-        TypeVisitor, SyntheticTypeVisitor, TypeTranslator, TypeQuery
-    )
+
+# This is an awful hack around the fact the mypyc's import behavior is forced
+# to always be at the start of files.
+_type_helpers = importlib.import_module('mypy.type_visitor')  # type: ignore
+TypeVisitor = _type_helpers.TypeVisitor  # type: ignore  # noqa
+SyntheticTypeVisitor = _type_helpers.SyntheticTypeVisitor  # type: ignore  # noqa
+TypeTranslator = _type_helpers.TypeTranslator  # type: ignore  # noqa
+TypeQuery = _type_helpers.TypeQuery  # type: ignore  # noqa
 
 
 class TypeStrVisitor(SyntheticTypeVisitor[str]):
