@@ -18,7 +18,7 @@ from mypy.nodes import (
     FuncBase, FuncDef,
 )
 from mypy.sharedparse import argument_elide_name
-from mypy.util import IdMapper
+from mypy.util import IdMapper, replace_object_state
 from mypy.bogus_type import Bogus
 
 from mypy.mypyc_hacks import TypeOfAny
@@ -1746,7 +1746,14 @@ def copy_type(t: Type) -> Type:
     """
     Build a copy of the type; used to mutate the copy with truthiness information
     """
-    return copy.copy(t)
+    # We'd like to just do a copy.copy(), but mypyc types aren't
+    # pickleable so we hack around it.
+    typ = type(t)
+    nt = typ.__new__(typ)
+    replace_object_state(nt, t)
+    if hasattr(nt, '__dict__'):
+        nt.__dict__ = nt.__dict__.copy()
+    return nt
 
 
 def true_only(t: Type) -> Type:
