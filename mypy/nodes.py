@@ -2179,8 +2179,7 @@ class TypeInfo(SymbolNode):
         self.module_name = module_name
         self.type_vars = []
         self.bases = []
-        # Leave self.mro uninitialized until we compute it for real,
-        # so we don't accidentally try to use it prematurely.
+        self.mro = []
         self._fullname = defn.fullname
         self.is_abstract = False
         self.abstract_attributes = []
@@ -2208,9 +2207,6 @@ class TypeInfo(SymbolNode):
         return len(self.type_vars) > 0
 
     def get(self, name: str) -> 'Optional[SymbolTableNode]':
-        if self.mro is None:  # Might be because of a previous error.
-            return None
-
         for cls in self.mro:
             n = cls.names.get(name)
             if n:
@@ -2249,8 +2245,6 @@ class TypeInfo(SymbolNode):
         return self.get(name) is not None
 
     def get_method(self, name: str) -> Optional[FuncBase]:
-        if self.mro is None:  # Might be because of a previous error.
-            return None
         for cls in self.mro:
             if name in cls.names:
                 node = cls.names[name].node
@@ -2271,8 +2265,6 @@ class TypeInfo(SymbolNode):
                       if s.declared_metaclass is not None
                       and s.declared_metaclass.type is not None]
         for c in candidates:
-            if c.type.mro is None:
-                continue
             if all(other.type in c.type.mro for other in candidates):
                 return c
         return None
@@ -2286,10 +2278,9 @@ class TypeInfo(SymbolNode):
 
         This can be either via extension or via implementation.
         """
-        if self.mro:
-            for cls in self.mro:
-                if cls.fullname() == fullname:
-                    return True
+        for cls in self.mro:
+            if cls.fullname() == fullname:
+                return True
         return False
 
     def direct_base_classes(self) -> 'List[TypeInfo]':
