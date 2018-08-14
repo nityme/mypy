@@ -6,7 +6,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from typing import (
     Any, TypeVar, Dict, List, Tuple, cast, Generic, Set, Optional, Union, Iterable, NamedTuple,
-    Callable, Sequence, Iterator
+    Callable, Sequence, Iterator, ClassVar,
 )
 
 import mypy.nodes
@@ -93,7 +93,7 @@ class TypeVarId:
     meta_level = 0  # type: int
 
     # Class variable used for allocating fresh ids for metavariables.
-    next_raw_id = 1  # type: int
+    next_raw_id = 1  # type: ClassVar[int]
 
     def __init__(self, raw_id: int, meta_level: int = 0) -> None:
         self.raw_id = raw_id
